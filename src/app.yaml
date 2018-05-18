@@ -1,0 +1,17 @@
+runtime: python27
+api_version: 1
+threadsafe: true
+automatic_scaling:
+  max_idle_instances: 2 
+  
+libraries:
+- name: jinja2
+  version: latest
+
+- name: ssl
+  version: latest
+
+handlers:
+- url: /.*
+  script: main.app
+  login: admin
