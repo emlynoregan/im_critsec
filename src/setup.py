@@ -8,7 +8,7 @@ except ImportError:
 
 dist = setup(
     name='im_critsec',
-    version='0.0.2',
+    version='0.0.3',
     description='@critsec and @debouncedcritsec for google app engine, python standard environment',
     author='Emlyn O\'Regan',
     author_email='emlynoregan@gmail.com',
