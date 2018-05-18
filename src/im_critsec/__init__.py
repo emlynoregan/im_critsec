@@ -5,7 +5,7 @@ import functools
 from im_util import make_flash, get_utcnow_unixtimestampusec
 from google.appengine.ext import ndb
 import logging
-from im_debouncedtask import debouncedtask
+# from im_debouncedtask import debouncedtask
 
 _EXCLUDE_FROM_FLASH = "__x__"
 
@@ -31,12 +31,11 @@ class _CritSecLock(ndb.model.Model):
             llock = _CritSecLock(locked=False, skip=False, key=aKey)
         return llock
     
-def DeleteSomeOldLocks(aAmount=1000):
-    ltwentyFourHoursAgo = datetime.utcnow() - timedelta(days=1)
-    lkeysToDelete = list(_CritSecLock.query(_CritSecLock.updated < ltwentyFourHoursAgo).fetch(aAmount, keys_only=True))
-    ndb.delete_multi(lkeysToDelete)
-    return len(lkeysToDelete) == aAmount
-
+# def DeleteSomeOldLocks(aAmount=1000):
+#     ltwentyFourHoursAgo = datetime.utcnow() - timedelta(days=1)
+#     lkeysToDelete = list(_CritSecLock.query(_CritSecLock.updated < ltwentyFourHoursAgo).fetch(aAmount, keys_only=True))
+#     ndb.delete_multi(lkeysToDelete)
+#     return len(lkeysToDelete) == aAmount
     
 def _get_memskip(aMemcacheClient, aLockKey):
     return aMemcacheClient.gets(aLockKey.id())
@@ -118,16 +117,13 @@ def critsec(f = None, rerun_on_skip=True, **taskkwargs):
                         llock = _CritSecLock.GetOrCreate(llockKey)
                     
                         lskipped = llock.skip
-                        
-                        llock.locked = False
-                        llock.skip = False
+
+                        llock.key.delete()                        
                         
                         lmemcacheClient4 = memcache.Client()
                         # will rollback transaction if fails to set
                         # can accidentally set to 0 but transaction rolls back, that's ok.
                         _set_memskip_to_0_or_raise(lmemcacheClient4, llockKey)
-                        
-                        llock.put()
                         
                         return lskipped
                         
@@ -176,13 +172,13 @@ def critsec(f = None, rerun_on_skip=True, **taskkwargs):
                     _set_memskip_to_2_if_possible(lmemcacheClient2, llockKey)
             
         acquiretask()
-
-        CleanupLocks()
+# 
+#         CleanupLocks()
 
     return runf
 
-@debouncedtask(initsec=3600, repeatsec=3600)
-def CleanupLocks():
-    lmore = DeleteSomeOldLocks()
-    if lmore:
-        CleanupLocks()
+# @debouncedtask(initsec=3600, repeatsec=3600)
+# def CleanupLocks():
+#     lmore = DeleteSomeOldLocks()
+#     if lmore:
+#         CleanupLocks()

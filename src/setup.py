@@ -8,14 +8,14 @@ except ImportError:
 
 dist = setup(
     name='im_critsec',
-    version='0.0.3',
+    version='0.0.4',
     description='@critsec and @debouncedcritsec for google app engine, python standard environment',
     author='Emlyn O\'Regan',
     author_email='emlynoregan@gmail.com',
     url='https://github.com/emlynoregan/im_task',
     license='../LICENSE.txt',
     packages=['im_critsec'],
-    install_requires=['im_util', 'im_task', 'im_debouncedtask'],
+    install_requires=['im_util', 'im_task'],
     long_description=open('../README.md').read(),
     classifiers=[
         'Development Status :: 3 - Alpha',
