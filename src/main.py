@@ -76,10 +76,11 @@ def CallTwice(futurekey):
             lnumCalls = _get_memcount(lmemcacheClient1, "numcalls")
             lnumCalls = (lnumCalls or 0) + 1
             logging.info("lnumCalls=%s" % lnumCalls)
-            _set_memcount(lmemcacheClient1, "numcalls", lnumCalls)
             if lnumCalls == 2:
                 fut = GetFutureAndCheckReady(futurekey)
                 fut.set_success("called completion twice")
+
+            _set_memcount(lmemcacheClient1, "numcalls", lnumCalls)
         finally:
             _set_memcount(lmemcacheClient2, "reentry", 0)
 
@@ -107,12 +108,13 @@ def CallOneHundredTimes(futurekey):
             lnumCalls = _get_memcount(lmemcacheClient1, "numcalls")
             lnumCalls = (lnumCalls or 0) + 1
             logging.info("lnumCalls=%s" % lnumCalls)
-            _set_memcount(lmemcacheClient1, "numcalls", lnumCalls)
-            if lnumCalls > 2:
-                raise PermanentTaskFailure("Called too many times (%s)" % lnumCalls)
             if lnumCalls == 2:
                 fut = GetFutureAndCheckReady(futurekey)
                 fut.set_success("called completion twice")
+            if lnumCalls > 2:
+                raise PermanentTaskFailure("Called too many times (%s)" % lnumCalls)
+
+            _set_memcount(lmemcacheClient1, "numcalls", lnumCalls)
         finally:
             _set_memcount(lmemcacheClient2, "reentry", 0)
 
@@ -140,12 +142,14 @@ def CallOneHundredTimesWithNoRerun(futurekey):
             lnumCalls = _get_memcount(lmemcacheClient1, "numcalls")
             lnumCalls = (lnumCalls or 0) + 1
             logging.info("lnumCalls=%s" % lnumCalls)
-            _set_memcount(lmemcacheClient1, "numcalls", lnumCalls)
-            if lnumCalls > 1:
-                raise PermanentTaskFailure("Called too many times (%s)" % lnumCalls)
+
             if lnumCalls == 1:
                 fut = GetFutureAndCheckReady(futurekey)
                 fut.set_success("called completion once")
+            if lnumCalls > 1:
+                raise PermanentTaskFailure("Called too many times (%s)" % lnumCalls)
+
+            _set_memcount(lmemcacheClient1, "numcalls", lnumCalls)
         finally:
             _set_memcount(lmemcacheClient2, "reentry", 0)
 
