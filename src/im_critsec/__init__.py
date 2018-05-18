@@ -2,13 +2,15 @@ from google.appengine.api import memcache
 from datetime import datetime, timedelta
 from im_task import task, RetryTaskException, PermanentTaskFailure
 import functools
-from im_util import make_flash
+from im_util import make_flash, get_utcnow_unixtimestampusec
 from google.appengine.ext import ndb
 import logging
+from im_debouncedtask import debouncedtask
 
 _EXCLUDE_FROM_FLASH = "__x__"
 
 class _CritSecLock(ndb.model.Model):
+    updated = ndb.DateTimeProperty(auto_now=True)
     locked = ndb.BooleanProperty()
     skip = ndb.BooleanProperty()
     
@@ -28,6 +30,13 @@ class _CritSecLock(ndb.model.Model):
         if not llock:
             llock = _CritSecLock(locked=False, skip=False, key=aKey)
         return llock
+    
+def DeleteSomeOldLocks(aAmount=1000):
+    ltwentyFourHoursAgo = datetime.utcnow() - timedelta(days=1)
+    lkeysToDelete = list(_CritSecLock.query(_CritSecLock.updated < ltwentyFourHoursAgo).fetch(aAmount, keys_only=True))
+    ndb.delete_multi(lkeysToDelete)
+    return len(lkeysToDelete) == aAmount
+
     
 def _get_memskip(aMemcacheClient, aLockKey):
     return aMemcacheClient.gets(aLockKey.id())
@@ -83,7 +92,11 @@ def _set_memskip_to_2_if_possible(aMemcacheClient, aLockKey):
 
 def critsec(f = None, rerun_on_skip=True, **taskkwargs):
     if not f:
-        return functools.partial(critsec, rerun_on_skip=rerun_on_skip, **taskkwargs)
+        return functools.partial(
+            critsec, 
+            rerun_on_skip=rerun_on_skip, 
+            **taskkwargs
+        )
     
     @functools.wraps(f)
     def runf(*args, **kwargs):
@@ -164,4 +177,12 @@ def critsec(f = None, rerun_on_skip=True, **taskkwargs):
             
         acquiretask()
 
+        CleanupLocks()
+
     return runf
+
+@debouncedtask(initsec=3600, repeatsec=3600)
+def CleanupLocks():
+    lmore = DeleteSomeOldLocks()
+    if lmore:
+        CleanupLocks()
